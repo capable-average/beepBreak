@@ -1,0 +1,7 @@
+- vm1 -> Beep at ~10s
+- vm2 -> Low freq beep at ~9s
+- vm3 -> very small breaks/silence in voicemail message (at ~3s, ~5s etc) -> long silence (~9s to ~14s) -> beep at ~15s
+- vm4 -> silence from ~5s
+- vm5 -> silence from ~14s
+- vm6 -> silence from ~4s
+- vm7 -> very small silence part at ~3s (beep at ~12s)
