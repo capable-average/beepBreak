@@ -24,6 +24,8 @@ type Result struct {
 	DecisionMadeAt      time.Duration
 }
 
+const PostBeepVerifyDuration = 500 * time.Millisecond
+
 type DecisionEngine struct {
 	config          *config.Config
 	beepDetector    *detector.BeepDetector
@@ -34,6 +36,7 @@ type DecisionEngine struct {
 	signals         []Signal
 	transcript      string
 	beepDetected    *detector.BeepEvent
+	beepConfirmedAt time.Duration
 	phraseFound     bool
 	expectsBeep     bool
 	phraseTime      time.Duration
@@ -102,6 +105,7 @@ func (e *DecisionEngine) Process(filePath string) (*Result, error) {
 func (e *DecisionEngine) processChunk(chunk audio.AudioChunk, sttEnabled bool) {
 	if beepEvent := e.beepDetector.Process(chunk); beepEvent != nil {
 		e.beepDetected = beepEvent
+		e.beepConfirmedAt = 0
 		e.signals = append(e.signals, Signal{
 			Type:      "beep",
 			Timestamp: beepEvent.EndTime,
@@ -109,7 +113,8 @@ func (e *DecisionEngine) processChunk(chunk audio.AudioChunk, sttEnabled bool) {
 		})
 	}
 
-	if silenceEvent := e.silenceDetector.Process(chunk); silenceEvent != nil {
+	silenceEvent := e.silenceDetector.Process(chunk)
+	if silenceEvent != nil {
 		if silenceEvent.Confirmed && e.firstSilenceAt == 0 {
 			e.firstSilenceAt = silenceEvent.StartTime
 			e.signals = append(e.signals, Signal{
@@ -120,17 +125,37 @@ func (e *DecisionEngine) processChunk(chunk audio.AudioChunk, sttEnabled bool) {
 		}
 	}
 
+	// Check if speech resumed after a beep (=> intermediate beep)
+	if e.beepDetected != nil && e.beepConfirmedAt == 0 {
+		timeSinceBeep := chunk.Timestamp - e.beepDetected.EndTime
+		
+		// If silence detector indicates speech is happening, reset the beep
+		if timeSinceBeep > 0 && timeSinceBeep < PostBeepVerifyDuration {
+			if silenceEvent == nil && !e.silenceDetector.IsInSilence() {
+				e.signals = append(e.signals, Signal{
+					Type:      "beep",
+					Timestamp: chunk.Timestamp,
+					Details:   "intermediate beep - speech resumed, ignoring",
+				})
+				e.beepDetected = nil
+			}
+		} else if timeSinceBeep >= PostBeepVerifyDuration {
+			// Verify period passed with no speech - confirm this beep
+			e.beepConfirmedAt = chunk.Timestamp
+		}
+	}
+
 	if sttEnabled {
 		e.stt.SendAudio(chunk.Samples)
 	}
 }
 
 func (e *DecisionEngine) checkForDecision(currentTime time.Duration) {
-	// Priority 1: Beep detected - immediate decision
-	if e.beepDetected != nil {
+	// Priority 1: Beep detected AND confirmed (verify period passed)
+	if e.beepDetected != nil && e.beepConfirmedAt > 0 {
 		e.makeDecision(
 			e.beepDetected.EndTime+50*time.Millisecond,
-			"Beep detected - dropping immediately after beep ends",
+			"Beep detected and confirmed (no speech resumed) - dropping after beep",
 			currentTime,
 		)
 		return
