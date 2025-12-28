@@ -170,7 +170,7 @@ func (e *DecisionEngine) checkForDecision(currentTime time.Duration) {
 			e.makeDecision(
 				e.firstSilenceAt+200*time.Millisecond,
 				"End phrase + silence detected (no beep expected) - dropping",
-				currentTime,
+				e.firstSilenceAt+1*time.Second,
 			)
 			return
 		}
@@ -184,7 +184,7 @@ func (e *DecisionEngine) checkForDecision(currentTime time.Duration) {
 			e.makeDecision(
 				e.firstSilenceAt+200*time.Millisecond,
 				"Phrase indicated beep expected, waited 5s - dropping",
-				currentTime,
+				e.firstSilenceAt+5*time.Second,
 			)
 			return
 		}
@@ -198,7 +198,7 @@ func (e *DecisionEngine) checkForDecision(currentTime time.Duration) {
 			e.makeDecision(
 				e.firstSilenceAt+200*time.Millisecond,
 				fmt.Sprintf("Confirmed silence, waited %.1fs for beep - dropping", e.config.BeepWaitTimeout.Seconds()),
-				currentTime,
+				e.firstSilenceAt+e.config.BeepWaitTimeout,
 			)
 			return
 		}
