@@ -47,13 +47,11 @@ type DecisionEngine struct {
 	decisionResult *Result
 }
 
-func NewDecisionEngine(cfg *config.Config, sampleRate int) *DecisionEngine {
+func NewDecisionEngine(cfg *config.Config) *DecisionEngine {
 	return &DecisionEngine{
 		config:          cfg,
-		beepDetector:    detector.NewBeepDetector(cfg, sampleRate),
 		silenceDetector: detector.NewSilenceDetector(cfg),
 		phraseDetector:  detector.NewPhraseDetector(cfg),
-		stt:             detector.NewSpeechToText(cfg, sampleRate),
 		signals:         make([]Signal, 0),
 	}
 }

@@ -14,7 +14,6 @@ func init() {
 type Config struct {
 	// Audio processing settings
 	ChunkDuration time.Duration
-	SampleRate    int
 
 	// Beep detection settings
 	BeepMinFreq      float64
@@ -41,7 +40,6 @@ func DefaultConfig() *Config {
 
 	return &Config{
 		ChunkDuration: 20 * time.Millisecond,
-		SampleRate:    16000,
 
 		BeepMinFreq:      600.0,
 		BeepMaxFreq:      2500.0,

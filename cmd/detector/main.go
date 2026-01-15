@@ -91,7 +91,7 @@ func main() {
 		filename := filepath.Base(file)
 		fmt.Printf("\n[Processing] %s\n", filename)
 
-		eng := engine.NewDecisionEngine(cfg, cfg.SampleRate)
+		eng := engine.NewDecisionEngine(cfg)
 
 		result, err := eng.Process(file)
 		if err != nil {
